@@ -6,6 +6,11 @@ from celery.schedules import crontab
 from app.core.config import settings
 
 
+def _cron_value(value: str | None) -> str:
+    cleaned_value = (value or "").strip()
+    return cleaned_value or "*"
+
+
 celery_app = Celery(
     "rag_trends",
     broker=settings.celery_broker_url,
@@ -34,11 +39,11 @@ if settings.celery_beat_enabled:
         "run-all-sources-pipeline": {
             "task": "app.tasks.ingestion_tasks.run_all_sources_pipeline",
             "schedule": crontab(
-                minute=settings.celery_beat_cron_minute,
-                hour=settings.celery_beat_cron_hour,
-                day_of_week=settings.celery_beat_cron_day_of_week,
-                day_of_month=settings.celery_beat_cron_day_of_month,
-                month_of_year=settings.celery_beat_cron_month_of_year,
+                minute=_cron_value(settings.celery_beat_cron_minute),
+                hour=_cron_value(settings.celery_beat_cron_hour),
+                day_of_week=_cron_value(settings.celery_beat_cron_day_of_week),
+                day_of_month=_cron_value(settings.celery_beat_cron_day_of_month),
+                month_of_year=_cron_value(settings.celery_beat_cron_month_of_year),
             ),
             "kwargs": {"limit": max(1, settings.celery_beat_auto_limit)},
         }
