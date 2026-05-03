@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     # Celery
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/1"
+    celery_broker_connection_timeout_seconds: int = 5
+    celery_broker_socket_timeout_seconds: int = 5
+    celery_broker_ssl_cert_reqs: str = "required"
     celery_timezone: str = "UTC"
     celery_task_soft_time_limit_seconds: int = 600
     celery_task_time_limit_seconds: int = 900

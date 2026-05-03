@@ -1,3 +1,4 @@
+from celery.exceptions import CeleryError
 from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -19,6 +20,15 @@ def _assert_source_exists(source_id: str) -> None:
     valid_source_ids = {source.id for source in list_sources()}
     if source_id not in valid_source_ids:
         raise HTTPException(status_code=404, detail=f"Unsupported source_id: {source_id}")
+
+
+def _enqueue_task(task_call, detail: str):
+    try:
+        return task_call()
+    except CeleryError as exc:
+        raise HTTPException(status_code=503, detail=detail) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=detail) from exc
 
 
 @router.post("/fetch-and-save/{source_id}")
@@ -60,7 +70,10 @@ def queue_auto_ingest(
     fetch -> save -> extract content -> chunk -> embed -> index.
     """
     _assert_source_exists(source_id)
-    task = run_source_pipeline.delay(source_id=source_id, limit=limit)
+    task = _enqueue_task(
+        lambda: run_source_pipeline.delay(source_id=source_id, limit=limit),
+        "Failed to queue source ingestion task. Check Redis/Celery connectivity.",
+    )
     return {
         "status": "queued",
         "task_id": task.id,
@@ -76,7 +89,10 @@ def queue_auto_ingest_all(
     """
     Queue full ingestion pipeline across all configured sources in Celery.
     """
-    task = run_all_sources_pipeline.delay(limit=limit)
+    task = _enqueue_task(
+        lambda: run_all_sources_pipeline.delay(limit=limit),
+        "Failed to queue all-sources ingestion task. Check Redis/Celery connectivity.",
+    )
     return {
         "status": "queued",
         "task_id": task.id,
@@ -92,7 +108,10 @@ def queue_process_pending_items(
     """
     Queue processing of already-saved but not-yet-indexed items.
     """
-    task = process_unprocessed_items.delay(limit=limit)
+    task = _enqueue_task(
+        lambda: process_unprocessed_items.delay(limit=limit),
+        "Failed to queue pending-items task. Check Redis/Celery connectivity.",
+    )
     return {
         "status": "queued",
         "task_id": task.id,
