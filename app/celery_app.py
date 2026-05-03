@@ -8,7 +8,11 @@ from app.core.config import settings
 
 def _cron_value(value: str | None) -> str:
     cleaned_value = (value or "").strip()
-    return cleaned_value or "*"
+    if not cleaned_value:
+        return "*"
+    if cleaned_value.startswith("/"):
+        return f"*{cleaned_value}"
+    return cleaned_value
 
 
 celery_app = Celery(
