@@ -12,6 +12,7 @@ def _build_database_url(database_name: str) -> str:
         f"{settings.db_user}:{settings.db_password}@"
         f"{settings.db_host}:{settings.db_port}/"
         f"{database_name}"
+        f"?sslmode={settings.db_sslmode}"
     )
 
 
@@ -37,6 +38,7 @@ def ensure_database_exists() -> None:
             dbname=settings.db_name,
             user=settings.db_user,
             password=settings.db_password,
+            sslmode=settings.db_sslmode,
         ):
             return
     except psycopg2.OperationalError as db_error:
@@ -50,6 +52,7 @@ def ensure_database_exists() -> None:
         dbname="postgres",
         user=settings.db_user,
         password=settings.db_password,
+        sslmode=settings.db_sslmode,
     )
     try:
         admin_conn.autocommit = True

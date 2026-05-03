@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     db_user: str = "postgres"
     db_password: str = "postgres"
     db_name: str = "rag_trends_db"
+    db_sslmode: str = "require"
 
     # LLM - Gemini
     gemini_api_key: str = ""
